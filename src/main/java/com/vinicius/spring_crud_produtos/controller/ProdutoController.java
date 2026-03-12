@@ -1,11 +1,12 @@
 package com.vinicius.spring_crud_produtos.controller;
 
 
-import com.vinicius.spring_crud_produtos.entity.ProdutoEntity;
-import com.vinicius.spring_crud_produtos.repository.ProdutoRepository;
-import com.vinicius.spring_crud_produtos.service.ProdutoService;
+import com.vinicius.spring_crud_produtos.controller.dtos.in.ProdutoDTORequest;
+import com.vinicius.spring_crud_produtos.controller.dtos.out.ProdutoDTOResponse;
+import com.vinicius.spring_crud_produtos.infrastructure.repository.ProdutoRepository;
+import com.vinicius.spring_crud_produtos.business.ProdutoService;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,29 +16,34 @@ import java.util.List;
 @RequestMapping("/produtos")
 @RequiredArgsConstructor
 public class ProdutoController {
+
     private final ProdutoService produtoService;
-    private final ProdutoRepository produtoRepository;
 
     @PostMapping
-    public ResponseEntity<Void> salvar(@RequestBody ProdutoEntity produto ){
-        produtoService.salvar(produto);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+    public ResponseEntity<ProdutoDTOResponse> salvarProduto(@RequestBody ProdutoDTORequest dto){
+        return ResponseEntity.ok(produtoService.adicionarProduto(dto));
     }
 
     @GetMapping
-    public ResponseEntity<List<ProdutoEntity>> listar(){
-        return ResponseEntity.ok(produtoService.listar());
+    public ResponseEntity<List<ProdutoDTOResponse>> listarProdutos(){
+        return ResponseEntity.ok(produtoService.listarProdutos());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id){
-        produtoService.deletar(id);
-        return ResponseEntity.noContent().build(); // 204
+    @GetMapping("/{nome}")
+    public ResponseEntity<ProdutoDTOResponse> buscarProdutoNome(@PathVariable String nome){
+        return ResponseEntity.ok(produtoService.buscarProdutoPorNome(nome));
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ProdutoEntity> atualizar
-            (@PathVariable Long id,
-             @RequestBody ProdutoEntity produto)
-    {   return ResponseEntity.ok(produtoService.editar(id, produto)); }
+    @DeleteMapping
+    public ResponseEntity<Void> deletarPorNome(@RequestParam("produto") String nome){
+        produtoService.deletarPorNome(nome);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping
+    public ResponseEntity<ProdutoDTOResponse> atualizarPorId(@RequestParam("id") Long id,
+                                                             @RequestBody ProdutoDTORequest  dto){
+        return ResponseEntity.ok(produtoService.atualizarProdutoPorId(id, dto));
+    }
+
 }
