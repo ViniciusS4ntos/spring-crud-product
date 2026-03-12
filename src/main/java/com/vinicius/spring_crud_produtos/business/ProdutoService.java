@@ -1,7 +1,12 @@
-package com.vinicius.spring_crud_produtos.service;
+package com.vinicius.spring_crud_produtos.business;
 
-import com.vinicius.spring_crud_produtos.entity.ProdutoEntity;
-import com.vinicius.spring_crud_produtos.repository.ProdutoRepository;
+import com.vinicius.spring_crud_produtos.controller.dtos.in.ProdutoDTORequest;
+import com.vinicius.spring_crud_produtos.controller.dtos.out.ProdutoDTOResponse;
+import com.vinicius.spring_crud_produtos.controller.mapper.ProdutoConverter;
+import com.vinicius.spring_crud_produtos.infrastructure.entity.Produto;
+import com.vinicius.spring_crud_produtos.infrastructure.exception.NomeExistenteException;
+import com.vinicius.spring_crud_produtos.infrastructure.exception.ResourceNotFoundException;
+import com.vinicius.spring_crud_produtos.infrastructure.repository.ProdutoRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -10,43 +15,65 @@ import java.util.List;
 @Service
 @AllArgsConstructor
 public class ProdutoService {
+
     private final ProdutoRepository produtoRepository;
+    private final ProdutoConverter produtoConverter;
 
 
-    //POST
-    public void  salvar(ProdutoEntity produto){
-        produtoRepository.save(produto);
+    // salvar
+    public ProdutoDTOResponse adicionarProduto(ProdutoDTORequest dto) {
+
+        verificarNomeExiste(dto.getNomeProduto());
+
+        Produto entity = produtoConverter.paraEntity(dto);
+
+        return produtoConverter.paraDTO(produtoRepository.save(entity));
     }
 
-    //GET
-    public List<ProdutoEntity> listar(){
-        return produtoRepository.findAll();
+    // Listagem De Produtos
+    public List<ProdutoDTOResponse> listarProdutos(){
+
+        List<Produto> lista = produtoRepository.findAll();
+
+        return produtoConverter.converterListDTO(lista);
     }
 
-    //DELETE
-    public void deletar(Long Id){
-        produtoRepository.deleteById(Id);
-    }
+    // Buscar Por Nome
+    public ProdutoDTOResponse buscarProdutoPorNome(String nome){
 
-    //PUT
-    public ProdutoEntity editar(Long id, ProdutoEntity produtoAtualizado){
-
-        ProdutoEntity prod = produtoRepository.findById(id).orElseThrow(
-                () -> new RuntimeException("Not found")
+        Produto entity = produtoRepository.findByNomeProduto(nome).orElseThrow(
+                () -> new ResourceNotFoundException("Nome de produto nao encontrado! : ")
         );
-        if (produtoAtualizado.getNomeProduto() != null) {
-            prod.setNomeProduto(produtoAtualizado.getNomeProduto());
-        }
 
-        if (produtoAtualizado.getValorProduto() != null) {
-            prod.setValorProduto(produtoAtualizado.getValorProduto());
-        }
-
-        if (produtoAtualizado.getQuantidadeEmEstoque() != null) {
-            prod.setQuantidadeEmEstoque(produtoAtualizado.getQuantidadeEmEstoque());
-        }
-
-        return produtoRepository.save(prod); // UPDATE
-
+        return produtoConverter.paraDTO(entity);
     }
+
+    // Delete Por Nome
+    public void deletarPorNome(String nome){
+        produtoRepository.deleteByNomeProduto(nome).orElseThrow(
+                () -> new ResourceNotFoundException("Nome invalido ou inexistente! : ")
+        );
+    }
+
+    // Atualizar Por Id
+    public ProdutoDTOResponse atualizarProdutoPorId(Long id,ProdutoDTORequest dto){
+
+        Produto produto = produtoRepository.findById(id).orElseThrow(
+                () -> new ResourceNotFoundException("Id nao encontrado! : ")
+        );
+
+        produto.setNomeProduto(dto.getNomeProduto() != null ? dto.getNomeProduto() : produto.getNomeProduto());
+        produto.setValorProduto(dto.getValorProduto() != null ? dto.getValorProduto() : produto.getValorProduto());
+        produto.setQuantidadeEmEstoque(dto.getQuantidadeEmEstoque() != null  ? dto.getQuantidadeEmEstoque() : produto.getQuantidadeEmEstoque());
+
+        return produtoConverter.paraDTO(produtoRepository.save(produto));
+    }
+
+
+    public void verificarNomeExiste(String nome){
+        if (produtoRepository.existsByNomeProduto(nome)){
+            throw new NomeExistenteException("Nome existente");
+        }
+    }
+
 }
