@@ -1,4 +1,4 @@
-package com.vinicius.spring_crud_produtos.entity;
+package com.vinicius.spring_crud_produtos.infrastructure.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
